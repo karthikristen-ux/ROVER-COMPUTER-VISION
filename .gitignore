@@ -1,0 +1,15 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# YOLO Models
+*.pt
+
+# IDEs
+.vscode/
+.idea/
+
+# ESP32
+build/
