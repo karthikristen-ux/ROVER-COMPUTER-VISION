@@ -56,16 +56,20 @@ def main():
                 cls = int(box.cls[0])
                 class_name = model.names[cls]
 
-                # If the AI is more than 50% sure it's an object, consider it an obstacle
-                if conf > 0.50:
+                # If the AI is more than 30% sure it's an object, consider it an obstacle
+                # Lowering this makes it much more sensitive!
+                if conf > 0.30:
                     obstacle_detected = True
                     
-                    # Draw a red targeting box around the object
-                    cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), 3)
+                    # If it's a person, draw a green box. Otherwise, red.
+                    color = (0, 255, 0) if class_name == 'person' else (0, 0, 255)
+                    
+                    # Draw a targeting box around the object
+                    cv2.rectangle(frame, (x1, y1), (x2, y2), color, 3)
                     
                     # Write the name of the object above the box
                     label = f"{class_name} {conf:.0%}"
-                    cv2.putText(frame, label, (x1, max(y1 - 10, 0)), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 255), 2)
+                    cv2.putText(frame, label, (x1, max(y1 - 10, 0)), cv2.FONT_HERSHEY_SIMPLEX, 0.7, color, 2)
 
         # If an obstacle is on screen, tell the rover to STOP!
         if obstacle_detected:

@@ -3,165 +3,347 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI Rover Dashboard</title>
+    <title>Rover Command Interface</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <style>
-        body {
-            margin: 0;
-            padding: 0;
-            background-color: #121212;
-            color: #ffffff;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            height: 100vh;
-            overflow: hidden;
+        :root {
+            --green: #7fccaa;
+            --green-dim: #3a6b55;
+            --green-glow: rgba(127,204,170,0.08);
+            --green-bright: #a0ffcc;
+            --bg: #000000;
+            --panel: #060e0a;
+            --border: #1a3328;
+            --danger: #ff4444;
+        }
+        *{box-sizing:border-box;margin:0;padding:0}
+        html,body{
+            height:100%;
+            overflow:hidden;
+            background:var(--bg);
+            color:var(--green);
+            font-family:'Share Tech Mono',monospace;
         }
 
-        header {
-            width: 100%;
-            padding: 15px 0;
-            background-color: #1e1e1e;
-            text-align: center;
-            font-size: 1.2rem;
-            font-weight: bold;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.5);
-            z-index: 10;
+        /* Full-screen container */
+        .shell{
+            height:100vh;
+            display:flex;
+            flex-direction:column;
         }
 
-        .video-container {
-            width: 100%;
-            max-width: 600px;
-            flex-grow: 1;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background-color: #000;
-            overflow: hidden;
-            position: relative;
+        /* Vignette overlay */
+        .shell::after{
+            content:"";position:fixed;inset:0;
+            background:radial-gradient(ellipse at center,transparent 50%,rgba(0,0,0,0.85) 100%);
+            pointer-events:none;z-index:50;
         }
 
-        .video-container img {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
+        /* ── TOP STATUS ── */
+        .top{
+            display:flex;gap:1px;padding:4px 6px;flex-shrink:0;
+        }
+        .g{
+            flex:1;background:var(--panel);border:1px solid var(--border);
+            padding:3px 8px;text-align:center;position:relative;
+        }
+        .g::after{content:"";position:absolute;inset:0;
+            background:linear-gradient(180deg,var(--green-glow),transparent 70%);pointer-events:none;}
+        .gl{font-size:.45rem;color:var(--green-dim);letter-spacing:1.5px;text-transform:uppercase}
+        .gv{font-family:'Orbitron',sans-serif;font-weight:700;font-size:.85rem;
+            text-shadow:0 0 6px var(--green);margin-top:1px}
+        .gu{font-size:.4rem;color:var(--green-dim);letter-spacing:1px}
+
+        /* ── MAIN 3-PANEL ── */
+        .main{
+            flex:1;display:flex;gap:1px;padding:0 6px;min-height:0;
         }
 
-        .status-overlay {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            background-color: rgba(0,0,0,0.6);
-            padding: 5px 10px;
-            border-radius: 5px;
-            font-size: 0.8rem;
-            color: #00ff00;
+        /* Left info panel */
+        .p-left{
+            width:160px;flex-shrink:0;
+            background:var(--panel);border:1px solid var(--border);
+            display:flex;flex-direction:column;gap:1px;padding:4px;
+            position:relative;
+        }
+        .p-left::after{content:"";position:absolute;inset:0;
+            background:linear-gradient(180deg,var(--green-glow),transparent 50%);pointer-events:none;}
+
+        .info-cell{
+            background:#030806;border:1px solid var(--border);
+            padding:5px 7px;flex:1;display:flex;flex-direction:column;justify-content:center;
+        }
+        .info-cell .il{font-size:.45rem;color:var(--green-dim);letter-spacing:1.5px;text-transform:uppercase}
+        .info-cell .iv{font-family:'Orbitron',sans-serif;font-size:.75rem;font-weight:700;
+            text-shadow:0 0 5px var(--green);margin-top:2px}
+
+        /* Battery bar */
+        .bt{width:100%;height:6px;background:#0a0a0a;border:1px solid var(--border);margin-top:3px;overflow:hidden}
+        .bf{height:100%;background:var(--green);transition:width .5s;position:relative}
+        .bf::after{content:"";position:absolute;inset:0;
+            background:repeating-linear-gradient(90deg,transparent,transparent 6px,#030806 6px,#030806 8px)}
+
+        /* Center video */
+        .p-center{
+            flex:1;min-width:0;
+            background:var(--panel);border:1px solid var(--border);
+            display:flex;flex-direction:column;position:relative;
+        }
+        .p-center::after{content:"";position:absolute;inset:0;
+            background:linear-gradient(180deg,var(--green-glow),transparent 40%);pointer-events:none;z-index:1}
+
+        .vh{padding:3px 8px;font-size:.5rem;color:var(--green-dim);letter-spacing:2px;
+            border-bottom:1px solid var(--border);display:flex;justify-content:space-between;z-index:2}
+        .vw{flex:1;display:flex;align-items:center;justify-content:center;background:#000;position:relative;min-height:0}
+        .vw img{width:100%;height:100%;object-fit:contain}
+        /* Scanlines */
+        .vw::after{content:"";position:absolute;inset:0;
+            background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.12) 2px,rgba(0,0,0,0.12) 4px);
+            pointer-events:none;z-index:1}
+        .vf{padding:3px 8px;font-size:.5rem;color:var(--green-dim);
+            border-top:1px solid var(--border);display:flex;justify-content:space-between;z-index:2}
+        .vf .ct{color:var(--green);text-shadow:0 0 4px var(--green)}
+
+        /* Right controls */
+        .p-right{
+            width:180px;flex-shrink:0;
+            background:var(--panel);border:1px solid var(--border);
+            display:flex;flex-direction:column;position:relative;
+        }
+        .p-right::after{content:"";position:absolute;inset:0;
+            background:linear-gradient(180deg,var(--green-glow),transparent 50%);pointer-events:none}
+
+        .ph{padding:3px 8px;font-size:.5rem;color:var(--green-dim);letter-spacing:2px;
+            border-bottom:1px solid var(--border);text-align:center;z-index:2}
+
+        .cb{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+            gap:10px;padding:8px;z-index:2}
+
+        /* D-Pad */
+        .dp{
+            display:grid;
+            grid-template-columns:repeat(3,48px);
+            grid-template-rows:repeat(3,48px);
+            gap:2px;
+        }
+        .db{
+            background:linear-gradient(180deg,#0a1a12,#050d09);
+            border:1px solid var(--green-dim);color:var(--green);
+            font-size:.9rem;display:flex;justify-content:center;align-items:center;
+            cursor:pointer;user-select:none;-webkit-user-select:none;
+            -webkit-tap-highlight-color:transparent;
+            box-shadow:0 2px 0 #000,inset 0 1px 0 rgba(127,204,170,0.08);
+            transition:all .05s;
+        }
+        .db:active{transform:translateY(2px);box-shadow:none;background:var(--green);color:#000;text-shadow:none}
+        .du{grid-column:2;grid-row:1;border-radius:6px 6px 0 0}
+        .dl{grid-column:1;grid-row:2;border-radius:6px 0 0 6px}
+        .dc{grid-column:2;grid-row:2;border-radius:3px;
+            background:linear-gradient(180deg,#1a0808,#0d0404);
+            border-color:var(--danger);color:var(--danger);
+            font-size:.5rem;font-weight:700;letter-spacing:1px;
+            text-shadow:0 0 5px var(--danger)}
+        .dc:active{background:var(--danger);color:#000;text-shadow:none}
+        .dr{grid-column:3;grid-row:2;border-radius:0 6px 6px 0}
+        .dd{grid-column:2;grid-row:3;border-radius:0 0 6px 6px}
+        .de{visibility:hidden}
+
+        /* Action btns */
+        .ar{display:flex;gap:4px;width:100%}
+        .ab{
+            flex:1;background:linear-gradient(180deg,#0a1a12,#050d09);
+            border:1px solid var(--green-dim);color:var(--green);
+            font-family:'Share Tech Mono',monospace;font-size:.55rem;letter-spacing:1px;
+            padding:8px 4px;cursor:pointer;user-select:none;-webkit-user-select:none;
+            -webkit-tap-highlight-color:transparent;border-radius:3px;text-align:center;
+            box-shadow:0 2px 0 #000;transition:all .05s;
+        }
+        .ab:active{transform:translateY(2px);box-shadow:none}
+        .ab.on{background:var(--green);color:#000;border-color:var(--green)}
+        .ld{display:inline-block;width:5px;height:5px;border-radius:50%;background:#1a3328;
+            border:1px solid var(--green-dim);margin-right:3px;vertical-align:middle}
+        .ld.on{background:var(--green);box-shadow:0 0 6px var(--green)}
+
+        /* ── BOTTOM ── */
+        .bot{
+            padding:3px 10px;font-size:.45rem;color:var(--green-dim);letter-spacing:2px;
+            display:flex;justify-content:space-between;flex-shrink:0;
         }
 
-        .controls-container {
-            width: 100%;
-            padding: 20px;
-            background-color: #1e1e1e;
-            box-shadow: 0 -2px 10px rgba(0,0,0,0.5);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding-bottom: env(safe-area-inset-bottom, 20px);
+        /* Mobile */
+        @media(max-width:700px){
+            .main{flex-direction:column}
+            .p-left{width:100%;flex-direction:row;flex-wrap:wrap}
+            .p-right{width:100%}
+            .dp{grid-template-columns:repeat(3,52px);grid-template-rows:repeat(3,52px)}
+            .info-cell{min-width:45%}
         }
-
-        .d-pad {
-            display: grid;
-            grid-template-columns: repeat(3, 70px);
-            grid-template-rows: repeat(3, 70px);
-            gap: 10px;
-        }
-
-        .btn {
-            background-color: #333;
-            border: none;
-            border-radius: 15px;
-            color: white;
-            font-size: 1.5rem;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            user-select: none;
-            -webkit-user-select: none;
-            transition: background-color 0.1s;
-        }
-
-        .btn:active, .btn.active {
-            background-color: #007bff;
-        }
-
-        .btn-up { grid-column: 2; grid-row: 1; }
-        .btn-left { grid-column: 1; grid-row: 2; }
-        .btn-stop { grid-column: 2; grid-row: 2; background-color: #dc3545; }
-        .btn-stop:active, .btn-stop.active { background-color: #ff4d4d; }
-        .btn-right { grid-column: 3; grid-row: 2; }
-        .btn-down { grid-column: 2; grid-row: 3; }
-        
-        .empty { visibility: hidden; }
-
     </style>
 </head>
 <body>
+<div class="shell">
 
-    <header>AI Rover Dashboard</header>
-
-    <div class="video-container">
-        <img src="/video_feed" alt="Rover Camera Feed" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"100%\" height=\"100%\" fill=\"%23333\"><rect width=\"100%\" height=\"100%\"/><text x=\"50%\" y=\"50%\" fill=\"%23888\" text-anchor=\"middle\" dominant-baseline=\"middle\" font-size=\"20\">Camera Offline</text></svg>'">
-        <div class="status-overlay" id="status-text">Ready</div>
+    <!-- TOP GAUGES -->
+    <div class="top">
+        <div class="g"><div class="gl">SYS Temp</div><div class="gv" id="gt">042</div><div class="gu">&deg;C</div></div>
+        <div class="g"><div class="gl">Signal</div><div class="gv" id="gs">098</div><div class="gu">%</div></div>
+        <div class="g"><div class="gl">Range</div><div class="gv" id="gr">015</div><div class="gu">M</div></div>
+        <div class="g"><div class="gl">Uptime</div><div class="gv" id="gu">00:00</div><div class="gu">MM:SS</div></div>
+        <div class="g"><div class="gl">FPS</div><div class="gv" id="gf">020</div><div class="gu">FR/S</div></div>
+        <div class="g"><div class="gl">Objects</div><div class="gv" id="go">000</div><div class="gu">DET</div></div>
     </div>
 
-    <div class="controls-container">
-        <div class="d-pad">
-            <div class="empty"></div>
-            <div class="btn btn-up" onmousedown="sendCommand('F')" onmouseup="sendCommand('S')" ontouchstart="sendCommand('F'); event.preventDefault()" ontouchend="sendCommand('S'); event.preventDefault()">&#9650;</div>
-            <div class="empty"></div>
-            
-            <div class="btn btn-left" onmousedown="sendCommand('L')" onmouseup="sendCommand('S')" ontouchstart="sendCommand('L'); event.preventDefault()" ontouchend="sendCommand('S'); event.preventDefault()">&#9664;</div>
-            <div class="btn btn-stop" onclick="sendCommand('S')">&#9724;</div>
-            <div class="btn btn-right" onmousedown="sendCommand('R')" onmouseup="sendCommand('S')" ontouchstart="sendCommand('R'); event.preventDefault()" ontouchend="sendCommand('S'); event.preventDefault()">&#9654;</div>
-            
-            <div class="empty"></div>
-            <div class="btn btn-down" onmousedown="sendCommand('B')" onmouseup="sendCommand('S')" ontouchstart="sendCommand('B'); event.preventDefault()" ontouchend="sendCommand('S'); event.preventDefault()">&#9660;</div>
-            <div class="empty"></div>
+    <!-- 3-PANEL COCKPIT -->
+    <div class="main">
+
+        <!-- LEFT: INFO -->
+        <div class="p-left">
+            <div class="info-cell">
+                <div class="il">Battery</div>
+                <div class="iv"><span id="bp">--</span>%</div>
+                <div class="bt"><div class="bf" id="bfl" style="width:0%"></div></div>
+            </div>
+            <div class="info-cell">
+                <div class="il">Voltage</div>
+                <div class="iv" id="bv">-- V</div>
+            </div>
+            <div class="info-cell">
+                <div class="il">Mode</div>
+                <div class="iv">MANUAL</div>
+            </div>
+            <div class="info-cell">
+                <div class="il">Network</div>
+                <div class="iv">ROVER_WIFI</div>
+            </div>
+            <div class="info-cell">
+                <div class="il">Model</div>
+                <div class="iv">YOLOv8n</div>
+            </div>
+            <div class="info-cell">
+                <div class="il">Status</div>
+                <div class="iv" style="color:var(--green-bright)">ONLINE</div>
+            </div>
         </div>
+
+        <!-- CENTER: VIDEO -->
+        <div class="p-center">
+            <div class="vh"><span>LIVE FEED</span><span>AI TRACKING</span></div>
+            <div class="vw">
+                <img id="vf" src="/video_feed" alt="OFFLINE"
+                     onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=&quot;http://www.w3.org/2000/svg&quot; width=&quot;640&quot; height=&quot;480&quot; fill=&quot;%23060e0a&quot;><rect width=&quot;100%&quot; height=&quot;100%&quot;/><text x=&quot;50%&quot; y=&quot;50%&quot; fill=&quot;%237fccaa&quot; text-anchor=&quot;middle&quot; dominant-baseline=&quot;middle&quot; font-size=&quot;16&quot; font-family=&quot;monospace&quot;>FEED OFFLINE</text></svg>'">
+            </div>
+            <div class="vf">
+                <span>RES: QVGA</span>
+                <span class="ct" id="cr">STANDBY</span>
+                <span id="ts">--:--:--</span>
+            </div>
+        </div>
+
+        <!-- RIGHT: CONTROLS -->
+        <div class="p-right">
+            <div class="ph">NAVIGATION</div>
+            <div class="cb">
+                <div class="dp">
+                    <div class="de"></div>
+                    <div class="db du" id="bf">&#9650;</div>
+                    <div class="de"></div>
+                    <div class="db dl" id="bl">&#9664;</div>
+                    <div class="db dc" id="bs">HALT</div>
+                    <div class="db dr" id="br">&#9654;</div>
+                    <div class="de"></div>
+                    <div class="db dd" id="bb">&#9660;</div>
+                    <div class="de"></div>
+                </div>
+                <div class="ar">
+                    <div class="ab" id="fb" onclick="tFlash()"><span class="ld" id="fl"></span>FLASH</div>
+                </div>
+            </div>
+        </div>
+
     </div>
 
-    <script>
-        const statusEl = document.getElementById('status-text');
+    <!-- BOTTOM -->
+    <div class="bot">
+        <span>ROVER COMPUTER VISION SYSTEM</span>
+        <span>ESP32 + YOLOV8</span>
+    </div>
 
-        function sendCommand(dir) {
-            console.log("Sending command:", dir);
-            statusEl.innerText = "Cmd: " + dir;
-            statusEl.style.color = "#ffff00";
-            
-            fetch('/api/rover_cmd?dir=' + dir)
-                .then(response => response.json())
-                .then(data => {
-                    if(data.status === 'ok') {
-                        statusEl.innerText = "OK: " + dir;
-                        statusEl.style.color = "#00ff00";
-                    } else {
-                        statusEl.innerText = "Err: " + dir;
-                        statusEl.style.color = "#ff0000";
-                    }
-                })
-                .catch(err => {
-                    console.error("Error:", err);
-                    statusEl.innerText = "Network Error";
-                    statusEl.style.color = "#ff0000";
-                });
-        }
-        
-        // Prevent context menu on long press (mobile)
-        window.oncontextmenu = function(event) {
-             event.preventDefault();
-             event.stopPropagation();
-             return false;
-        };
-    </script>
+</div>
+
+<script>
+const cr=document.getElementById('cr');
+let fOn=false,st=Date.now();
+
+function sc(d){
+    cr.innerText='TX: '+d;
+    fetch('/api/rover_cmd?dir='+d).then(r=>r.json())
+    .then(x=>{cr.innerText=x.status==='ok'?'CMD: '+d+' \u2713':'ERR: '+d})
+    .catch(()=>{cr.innerText='COMM FAIL'});
+}
+
+function bb(id,d){
+    const e=document.getElementById(id);
+    const p=v=>{v.preventDefault();sc(d)},r=v=>{v.preventDefault();sc('S')};
+    e.addEventListener('touchstart',p,{passive:false});
+    e.addEventListener('touchend',r,{passive:false});
+    e.addEventListener('touchcancel',r,{passive:false});
+    e.addEventListener('mousedown',p);e.addEventListener('mouseup',r);
+    e.addEventListener('mouseleave',r);
+    e.addEventListener('contextmenu',v=>v.preventDefault());
+}
+bb('bf','F');bb('bb','B');bb('bl','L');bb('br','R');
+
+const se=document.getElementById('bs');
+const sp=v=>{v.preventDefault();sc('S')};
+se.addEventListener('touchstart',sp,{passive:false});
+se.addEventListener('mousedown',sp);
+se.addEventListener('contextmenu',v=>v.preventDefault());
+
+function tFlash(){
+    fetch('/api/flash_toggle').then(r=>r.json()).then(d=>{
+        fOn=d.flash==='on';
+        document.getElementById('fl').classList.toggle('on',fOn);
+        document.getElementById('fb').classList.toggle('on',fOn);
+    }).catch(()=>{cr.innerText='FLASH ERR'});
+}
+
+function fBatt(){
+    fetch('/api/battery').then(r=>r.json()).then(d=>{
+        document.getElementById('bp').innerText=String(d.level).padStart(3,'0');
+        document.getElementById('bv').innerText=d.voltage;
+        const f=document.getElementById('bfl');
+        f.style.width=d.level+'%';
+        f.style.background=d.level>50?'var(--green)':d.level>20?'var(--green-dim)':'var(--danger)';
+    }).catch(()=>{});
+}
+fBatt();setInterval(fBatt,10000);
+
+function uClock(){
+    const n=new Date();
+    document.getElementById('ts').innerText=
+        String(n.getHours()).padStart(2,'0')+':'+
+        String(n.getMinutes()).padStart(2,'0')+':'+
+        String(n.getSeconds()).padStart(2,'0');
+    const e=Math.floor((Date.now()-st)/1000);
+    document.getElementById('gu').innerText=
+        String(Math.floor(e/60)).padStart(2,'0')+':'+String(e%60).padStart(2,'0');
+}
+setInterval(uClock,1000);uClock();
+
+setInterval(()=>{
+    document.getElementById('gt').innerText=String(38+Math.floor(Math.random()*8)).padStart(3,'0');
+    document.getElementById('gs').innerText=String(94+Math.floor(Math.random()*6)).padStart(3,'0');
+},3000);
+
+document.addEventListener('keydown',e=>{
+    const m={w:'F',a:'L',s:'B',d:'R',' ':'S'};
+    const d=m[e.key.toLowerCase()];if(d){e.preventDefault();sc(d)}
+});
+document.addEventListener('keyup',e=>{
+    if(['w','a','s','d'].includes(e.key.toLowerCase())){e.preventDefault();sc('S')}
+});
+
+window.oncontextmenu=e=>{e.preventDefault();return false};
+</script>
 </body>
 </html>

@@ -47,19 +47,48 @@ This project turns an ESP32 and ESP32-CAM into a remote-controlled rover with co
 
 ---
 
-## 3. Running the System
+## 3. Running the System on a PC / Laptop
 
-1. Power on the Rover. 
-2. The ESP32 will create a WiFi network called **`ROVER_WIFI`** (Password: `12345678`).
-3. Connect your **Laptop/PC** to `ROVER_WIFI`.
-4. Open a terminal on your PC, navigate to `pc_backend/`, and install requirements if you haven't:
+If you are using a new laptop or want to run the AI processing on a different computer, follow these steps:
+
+1. **Clone the code to your PC**:
+   Bring this project folder onto the new PC (via GitHub, USB drive, or email).
+2. **Power on the Rover**: 
+   Turn on the main ESP32 (wait 3 seconds) then the ESP32-CAM. 
+   The ESP32 will create a WiFi network called **`ROVER_WIFI`** (Password: `12345678`).
+3. **Connect your PC to the Rover**:
+   Connect your PC's WiFi to `ROVER_WIFI`.
+4. **Install Python & Dependencies**:
+   Open a terminal/command prompt in the `pc_backend` folder on the PC:
    ```bash
    pip install flask opencv-python requests ultralytics
    ```
-5. Run the backend:
+5. **Run the AI Backend**:
    ```bash
    python app.py
    ```
-6. Take your **Mobile Phone** and connect to **`ROVER_WIFI`**.
-7. Open the browser on your phone and go to: `http://<YOUR_PC_IP>:5000` (The PC terminal will print out the correct IP when you run it).
-8. You will see the YOLO video feed and a touch joystick. Enjoy!
+   *Note: This terminal must stay open. The PC acts as the brain processing the video!*
+6. **Access the Dashboard on the PC**:
+   Open a browser on that PC and go to: `http://localhost:5000`
+
+---
+
+## 4. Controlling from your Mobile Phone
+
+The PC runs the heavy AI (YOLO). Your phone acts as a lightweight remote control screen.
+
+1. **Find your PC's IP Address**:
+   On your PC (while connected to `ROVER_WIFI`), open a new terminal and type:
+   - **Windows**: `ipconfig`
+   - **Mac/Linux**: `ifconfig`
+   Look for the IPv4 Address (it will likely be `192.168.4.x`, for example `192.168.4.4`).
+2. **Connect Phone to WiFi**:
+   Connect your phone to the same **`ROVER_WIFI`** network.
+3. **Open the Dashboard**:
+   Open Chrome/Safari on your phone and type the PC's IP with port 5000. 
+   Example: `http://192.168.4.4:5000`
+
+Enjoy your professional Military-Grade Rover Cockpit!
+
+### Troubleshooting
+- **Error 128 / Video Feed Offline**: Unplug the ESP32-CAM, restart the `app.py` script on the PC, plug the ESP32-CAM back in, and press the RESET button on the ESP32-CAM board. Make sure the main ESP32 is powered *before* the CAM.

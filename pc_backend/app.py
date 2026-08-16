@@ -15,7 +15,7 @@ CAMERA_URL = "http://192.168.4.10:81/stream"
 # IP of the ESP32 Rover Controller (default AP IP)
 ROVER_CMD_URL = "http://192.168.4.1/cmd"
 
-MODEL_PATH = "yolov8s.pt"
+MODEL_PATH = "yolov8n.pt"
 
 # --- Global Variables ---
 running = True
@@ -50,6 +50,7 @@ def video_capture_loop():
         ret, frame = cap.read()
         if not ret:
             print("Failed to grab frame. Reconnecting...")
+            cap.release()
             time.sleep(1)
             cap.open(CAMERA_URL)
             continue
@@ -114,6 +115,21 @@ def rover_cmd():
             return jsonify({"status": "error", "message": f"ESP32 returned {response.status_code}"}), 500
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route("/api/flash_toggle")
+def flash_toggle():
+    """Proxy flash toggle request to ESP32-CAM on port 82."""
+    try:
+        response = requests.get("http://192.168.4.10:82/flash", timeout=2)
+        return Response(response.content, content_type="application/json")
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route("/api/battery")
+def battery():
+    """Return battery level. Currently simulated — upgrade to real ADC later."""
+    # TODO: Replace with real ADC reading from ESP32 when voltage divider is wired
+    return jsonify({"level": 85, "voltage": "7.4V"})
 
 # --- Startup ---
 if __name__ == "__main__":

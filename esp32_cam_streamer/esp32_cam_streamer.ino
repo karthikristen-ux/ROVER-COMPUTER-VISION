@@ -38,6 +38,8 @@ IPAddress subnet(255, 255, 255, 0);
 #define PCLK_GPIO_NUM     22
 
 httpd_handle_t stream_httpd = NULL;
+httpd_handle_t control_httpd = NULL;
+bool flash_on = false;
 
 static esp_err_t stream_handler(httpd_req_t *req) {
   camera_fb_t * fb = NULL;
@@ -96,7 +98,18 @@ static esp_err_t stream_handler(httpd_req_t *req) {
   return res;
 }
 
+// --- Flash Toggle Handler ---
+static esp_err_t flash_handler(httpd_req_t *req) {
+  flash_on = !flash_on;
+  digitalWrite(4, flash_on ? HIGH : LOW);
+  const char* resp = flash_on ? "{\"flash\":\"on\"}" : "{\"flash\":\"off\"}";
+  httpd_resp_set_type(req, "application/json");
+  httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
+  return httpd_resp_sendstr(req, resp);
+}
+
 void startCameraServer() {
+  // Stream server on port 81
   httpd_config_t config = HTTPD_DEFAULT_CONFIG();
   config.server_port = 81;
 
@@ -109,6 +122,22 @@ void startCameraServer() {
   
   if (httpd_start(&stream_httpd, &config) == ESP_OK) {
     httpd_register_uri_handler(stream_httpd, &stream_uri);
+  }
+
+  // Control server on port 82 (flash toggle)
+  httpd_config_t ctrl_config = HTTPD_DEFAULT_CONFIG();
+  ctrl_config.server_port = 82;
+  ctrl_config.ctrl_port = 42768;
+
+  httpd_uri_t flash_uri = {
+    .uri       = "/flash",
+    .method    = HTTP_GET,
+    .handler   = flash_handler,
+    .user_ctx  = NULL
+  };
+
+  if (httpd_start(&control_httpd, &ctrl_config) == ESP_OK) {
+    httpd_register_uri_handler(control_httpd, &flash_uri);
   }
 }
 
@@ -168,9 +197,9 @@ void setup() {
   Serial.println("");
   Serial.println("WiFi connected");
 
-  // Turn on the Flash LED (GPIO 4)
+  // Flash LED (GPIO 4) — starts OFF, toggled via /flash endpoint
   pinMode(4, OUTPUT);
-  digitalWrite(4, HIGH);
+  digitalWrite(4, LOW);
   
   startCameraServer();
   Serial.print("Camera Stream Ready! Go to: http://");
